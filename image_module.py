@@ -33,7 +33,7 @@ def predict_image(image_path):
     predicted_class_index = np.argmax(predictions[0])
     confidence = predictions[0][predicted_class_index] * 100
 
-    print(f"Predicted Disease: {class_labels[predicted_class_index]} with confidence {confidence:.2f}%")
+    return class_labels[predicted_class_index], confidence
 
 def process_video():
     cap = cv2.VideoCapture(0)

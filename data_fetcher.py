@@ -14,7 +14,7 @@ def fetch_disease_info(disease_name, lang='en'):
         return "Disease information could not be retrieved."
         
 # Example usage:
-info_en = fetch_disease_info("Anthracnose", lang='en')
+info_en = fetch_disease_info("Sooty Mould", lang='en')
 info_bn = fetch_disease_info("অ্যানথ্রাকনোজ", lang='bn')
 print("English:", info_en)
 print("Bangla:", info_bn)

@@ -1,7 +1,7 @@
 import speech_recognition as sr
 from gtts import gTTS
 import os
-from playsound import playsound
+import pygame
 
 def speech_to_text(language="en-US"):
     # Initialize recognizer
@@ -22,18 +22,39 @@ def speech_to_text(language="en-US"):
         print(f"Request error from Google Speech Recognition service: {e}")
 
 def speak(text, lang='en'):
-    # Create the TTS object (default voice is generally female)
-    tts = gTTS(text=text, lang=lang, slow=False)
-    
-    # Save the audio to a temporary file
-    filename = "temp.mp3"
-    tts.save(filename)
-    
-    # Play the audio file
-    playsound(filename)
-    
-    # Remove the temporary file
-    os.remove(filename)
+    """
+    Convert text to speech and play it using pygame instead of playsound
+    """
+    try:
+        # Initialize pygame mixer
+        pygame.mixer.init()
+        
+        # Generate speech
+        tts = gTTS(text=text, lang=lang)
+        
+        # Save to temporary file
+        temp_file = "temp_audio.mp3"
+        tts.save(temp_file)
+        
+        # Load and play the audio
+        pygame.mixer.music.load(temp_file)
+        pygame.mixer.music.play()
+        
+        # Wait for the audio to finish
+        while pygame.mixer.music.get_busy():
+            pygame.time.Clock().tick(10)
+            
+        # Cleanup
+        pygame.mixer.quit()
+        
+        # Remove temporary file
+        if os.path.exists(temp_file):
+            os.remove(temp_file)
+            
+    except Exception as e:
+        print(f"Error in speech playback: {str(e)}")
+        # Continue without audio if there's an error
+        pass
 
 if __name__ == '__main__':
     # Test the speech-to-text function
