@@ -4,30 +4,6 @@ import os
 import pygame
 import time
 
-def speech_to_text(language="en-US"):
-    """Convert speech to text using Google's speech recognition API."""
-    # Initialize recognizer
-    recognizer = sr.Recognizer()
-    
-    # Use the microphone as source for input.
-    with sr.Microphone() as source:
-        print(f"Please speak in {language}...")
-        # Adjust for ambient noise
-        recognizer.adjust_for_ambient_noise(source)
-        audio = recognizer.listen(source)
-    
-    try:
-        # Recognize speech using Google's online API.
-        text = recognizer.recognize_google(audio, language=language)
-        print(f"Recognized text ({language}): {text}")
-        return text
-    except sr.UnknownValueError:
-        print("Could not understand the audio.")
-        return None
-    except sr.RequestError as e:
-        print(f"Request error from Google Speech Recognition service: {e}")
-        return None
-
 def listen_for_speech(timeout=5, language="en-US"):
     """Listen for speech with a timeout."""
     # Initialize recognizer

@@ -1,4 +1,4 @@
-from speech_module import speech_to_text, speak, listen_for_speech
+from speech_module import speak, listen_for_speech
 from image_module import predict_image, process_video
 from ai_chatbot import generate_gemini_response
 import time
