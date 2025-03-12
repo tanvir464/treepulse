@@ -1,7 +1,6 @@
 from speech_module import speak, listen_for_speech
 from image_module import predict_image, process_video
 from ai_chatbot import generate_gemini_response
-import time
 
 def get_disease_info(disease_name, language):
     """Get description and remedies for the detected disease."""
