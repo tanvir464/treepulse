@@ -2,128 +2,157 @@ from speech_module import speak, listen_for_speech
 from image_module import predict_image, process_video
 from ai_chatbot import generate_gemini_response
 
-def get_disease_info(disease_name, language):
-    """Get description and remedies for the detected disease."""
-    if language == 'bn':
-        prompt = f"আম গাছে {disease_name} রোগ সম্পর্কে একটি সংক্ষিপ্ত বিবরণ এবং এর প্রতিকার দিন। ভান করো তুমি একজন কৃষকের সাথে কথা বলছো।"
-    else:
-        prompt = f"Provide a brief description and remedies for {disease_name} disease in mango trees. Pretend you are talking to a farmer."
-    
+conversation_history = []
+
+def get_gemini_response(new_message):
+    global conversation_history
+    conversation_history.append("User: " + new_message)
+    prompt = "\n".join(conversation_history) + "\nAssistant:"
     response = generate_gemini_response(prompt)
+    conversation_history.append("Assistant: " + response)
     return response
 
-def main():
-    # Ask for language preference via voice
-    speak("আপনার ভাষা পছন্দ বলুন। বাংলা বা ইংরেজি?", lang='bn')
-    
-    # Listen for language choice
-    language_choice = listen_for_speech()
-    
-    # Set language based on user's speech - make Bangla the default
-    if language_choice and ('english' in language_choice.lower() or 'ইংরেজি' in language_choice.lower()):
-        language = 'en'
-        speech_lang = 'en-US'
+def get_disease_info(disease_name, language):
+    if language == 'bn':
+        prompt = (
+            f"আমাদের গাছে {disease_name} রোগ দেখা যাচ্ছে। অনুগ্রহ করে এক অনুচ্ছেদে এই রোগের সংক্ষিপ্ত বিবরণ এবং এর প্রতিকার সম্পর্কে বিস্তারিত জানান।"
+        )
     else:
-        # Default to Bangla even if speech recognition fails
-        language = 'bn'
-        speech_lang = 'bn-BD'
+        prompt = (
+            f"Our mango tree shows signs of {disease_name} disease. Please provide a brief description and remedies for this disease in one paragraph."
+        )
+    response = get_gemini_response(prompt)
+    return response
+
+def get_language_choice():
+    speak("আপনার ভাষা পছন্দ বলুন। বাংলা বা ইংরেজি?", lang='bn')
+    while True:
+        response = listen_for_speech(language="bn-BD")
+        if response is not None:
+            lower_resp = response.lower()
+            if "english" in lower_resp or "ইংরেজি" in lower_resp:
+                return "en", "en-US"
+            elif "bangla" in lower_resp or "বাংলা" in lower_resp:
+                return "bn", "bn-BD"
+        speak("দয়া করে বাংলা বা ইংরেজি বলুন।", lang='bn')
+
+def get_mode_choice(language, speech_lang):
+    if language == 'bn':
+        speak("আপনি কি ভিডিও মোড নাকি ফটো মোড ব্যবহার করতে চান? ভিডিও বা ফটো বলুন।", lang=language)
+    else:
+        speak("Would you like to use video mode or photo mode? Please say video or photo.", lang=language)
+    while True:
+        response = listen_for_speech(language=speech_lang)
+        if response is not None:
+            lower_resp = response.lower()
+            if "video" in lower_resp or "ভিডিও" in lower_resp:
+                return "video"
+            elif "photo" in lower_resp or "ফটো" in lower_resp:
+                return "photo"
+        if language == 'bn':
+            speak("দয়া করে ভিডিও বা ফটো বলুন।", lang=language)
+        else:
+            speak("Please say either video or photo.", lang=language)
+
+def get_narration_choice(language, speech_lang):
+    if language == 'bn':
+        speak("আমি কি আপনাকে এই রোগ সম্পর্কে বিস্তারিত বলব? হ্যাঁ বা না বলুন।", lang=language)
+    else:
+        speak("Would you like me to explain about this disease? Say yes or no.", lang=language)
+    while True:
+        response = listen_for_speech(language=speech_lang)
+        if response is not None:
+            lower_resp = response.lower()
+            if "yes" in lower_resp or "হ্যাঁ" in lower_resp:
+                return True
+            elif "no" in lower_resp or "না" in lower_resp:
+                return False
+        if language == 'bn':
+            speak("দয়া করে হ্যাঁ বা না বলুন।", lang=language)
+        else:
+            speak("Please say yes or no.", lang=language)
+
+def main():
+    global conversation_history
+    conversation_history = []
+
+    language, speech_lang = get_language_choice()
     
-    # Welcome message
     if language == 'bn':
         welcome_msg = "স্বাগতম! আমি আপনার গাছের রোগ নির্ণয়ে সাহায্য করতে এসেছি।"
     else:
         welcome_msg = "Welcome! I'm here to help diagnose diseases in your plants."
-    
     print(welcome_msg)
     speak(welcome_msg, lang=language)
+    conversation_history.append("Assistant: " + welcome_msg)
     
-    # Ask for mode preference
-    if language == 'bn':
-        mode_msg = "আপনি কি ভিডিও মোড নাকি ফটো মোড ব্যবহার করতে চান? ভিডিও বা ফটো বলুন।"
-    else:
-        mode_msg = "Would you like to use video mode or photo mode? Please say video or photo."
+    mode_choice = get_mode_choice(language, speech_lang)
     
-    print(mode_msg)
-    speak(mode_msg, lang=language)
-    
-    # Listen for mode choice
-    mode_choice = listen_for_speech(language=speech_lang)
-    
-    # Process based on mode
     predicted_disease = None
     confidence = 0
     
-    if mode_choice and ('video' in mode_choice.lower() or 'ভিডিও' in mode_choice.lower()):
-        # Video mode
+    if mode_choice == "video":
         if language == 'bn':
             speak("ভিডিও মোড চালু হচ্ছে। আপনার গাছের পাতা ক্যামেরার সামনে ধরুন।", lang=language)
         else:
             speak("Starting video mode. Please show your plant leaf to the camera.", lang=language)
-        
         result = process_video(return_result=True)
         if result:
             predicted_disease, confidence = result
     else:
-        # Photo mode
         if language == 'bn':
             speak("ফটো মোড চালু হচ্ছে। অনুগ্রহ করে ছবির ফাইলের পথ লিখুন।", lang=language)
         else:
             speak("Starting photo mode. Please enter the path to your image file.", lang=language)
-        
         image_path = input("Enter the full path to the image file: ")
         result = predict_image(image_path)
         if result:
             predicted_disease, confidence = result
     
-    # Process results and provide information
     if predicted_disease:
         if language == 'bn':
             result_msg = f"আমি {confidence:.2f}% নিশ্চিত যে এটি {predicted_disease} রোগ।"
         else:
             result_msg = f"I am {confidence:.2f}% confident that this is {predicted_disease} disease."
-        
         print(result_msg)
         speak(result_msg, lang=language)
+        conversation_history.append("Assistant: " + result_msg)
         
-        # Get disease information and remedies
         disease_info = get_disease_info(predicted_disease, language)
         print(disease_info)
         
-        # Ask if the user wants to hear the narration
-        if language == 'bn':
-            narration_prompt = "আমি কি আপনাকে এই রোগ সম্পর্কে বিস্তারিত বলব? হ্যাঁ বা না বলুন।"
-        else:
-            narration_prompt = "Would you like me to explain about this disease? Say yes or no."
-        
-        speak(narration_prompt, lang=language)
-        narration_response = listen_for_speech(language=speech_lang)
-        
-        if not narration_response or not ('no' in narration_response.lower() or 'না' in narration_response.lower()):
+        narration_choice = get_narration_choice(language, speech_lang)
+        if narration_choice:
             speak(disease_info, lang=language)
     else:
         if language == 'bn':
             no_result_msg = "দুঃখিত, কোন রোগ সনাক্ত করা যায়নি। অনুগ্রহ করে আরও ভালো আলোতে আবার চেষ্টা করুন।"
         else:
             no_result_msg = "Sorry, no disease was detected. Please try again with better lighting."
-        
         print(no_result_msg)
         speak(no_result_msg, lang=language)
+        conversation_history.append("Assistant: " + no_result_msg)
     
-    # Follow-up questions loop
     continue_conversation = True
     while continue_conversation:
         if language == 'bn':
             question_prompt = "আপনার কি আরও কোন প্রশ্ন আছে? যদি থাকে তাহলে জিজ্ঞাসা করুন, অথবা বের হতে 'না' বলুন।"
         else:
             question_prompt = "Do you have any more questions? If yes, please ask, or say 'no' to exit."
-        
         print(question_prompt)
         speak(question_prompt, lang=language)
         
-        # Listen for question or exit command
         user_response = listen_for_speech(language=speech_lang)
         
-        if not user_response or 'no' in user_response.lower() or 'না' in user_response.lower():
+        if user_response is None:
+            if language == 'bn':
+                speak("আমি কিছু শুনতে পাচ্ছি না। অনুগ্রহ করে আপনার প্রশ্ন করুন অথবা বের হতে 'না' বলুন।", lang=language)
+            else:
+                speak("I didn't catch that. Please ask your question or say no to exit.", lang=language)
+            continue
+        
+        lower_resp = user_response.lower()
+        if 'no' in lower_resp or 'না' in lower_resp:
             continue_conversation = False
             if language == 'bn':
                 farewell = "ধন্যবাদ। আবার দেখা হবে।"
@@ -131,12 +160,9 @@ def main():
                 farewell = "Thank you. Goodbye!"
             print(farewell)
             speak(farewell, lang=language)
+            conversation_history.append("Assistant: " + farewell)
         else:
-            # Process the question
-            answer = generate_gemini_response(user_response)
-            print(answer)
-            
-            # Directly narrate the response without asking
+            answer = get_gemini_response(user_response)
             print(answer)
             speak(answer, lang=language)
     
