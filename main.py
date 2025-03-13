@@ -5,9 +5,9 @@ from ai_chatbot import generate_gemini_response
 def get_disease_info(disease_name, language):
     """Get description and remedies for the detected disease."""
     if language == 'bn':
-        prompt = f"{disease_name} রোগ সম্পর্কে একটি সংক্ষিপ্ত বিবরণ এবং এর প্রতিকার দিন।"
+        prompt = f"আম গাছে {disease_name} রোগ সম্পর্কে একটি সংক্ষিপ্ত বিবরণ এবং এর প্রতিকার দিন। ভান করো তুমি একজন কৃষকের সাথে কথা বলছো।"
     else:
-        prompt = f"Provide a brief description and remedies for {disease_name} disease in mango trees."
+        prompt = f"Provide a brief description and remedies for {disease_name} disease in mango trees. Pretend you are talking to a farmer."
     
     response = generate_gemini_response(prompt)
     return response
@@ -98,7 +98,7 @@ def main():
         speak(narration_prompt, lang=language)
         narration_response = listen_for_speech(language=speech_lang)
         
-        if narration_response and ('yes' in narration_response.lower() or 'হ্যাঁ' in narration_response.lower()):
+        if not narration_response or not ('no' in narration_response.lower() or 'না' in narration_response.lower()):
             speak(disease_info, lang=language)
     else:
         if language == 'bn':
