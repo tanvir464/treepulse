@@ -142,14 +142,14 @@ def main():
         print(question_prompt)
         speak(question_prompt, lang=language)
         
-        user_response = listen_for_speech(language=speech_lang)
-        
-        if user_response is None:
+        while True:
+            user_response = listen_for_speech(language=speech_lang)
+            if user_response is not None:
+                break
             if language == 'bn':
-                speak("আমি কিছু শুনতে পাচ্ছি না। অনুগ্রহ করে আপনার প্রশ্ন করুন অথবা বের হতে 'না' বলুন।", lang=language)
+                speak("আপনার কোন প্রশ্ন থাকলে জিজ্ঞাসা করুন অথবা বেরিয়ে যেতে না বলুন।", lang=language)
             else:
-                speak("I didn't catch that. Please ask your question or say no to exit.", lang=language)
-            continue
+                speak("Ask if you have any questions or say no to exit.", lang=language)
         
         lower_resp = user_response.lower()
         if 'no' in lower_resp or 'না' in lower_resp:
@@ -162,6 +162,10 @@ def main():
             speak(farewell, lang=language)
             conversation_history.append("Assistant: " + farewell)
         else:
+            if language == 'bn':
+                user_response = user_response + " একটি অনুচ্ছেদে উত্তর দিন।"
+            else:
+                user_response = user_response + " Respond within a paragraph."
             answer = get_gemini_response(user_response)
             print(answer)
             speak(answer, lang=language)
