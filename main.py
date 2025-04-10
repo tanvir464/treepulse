@@ -7,7 +7,36 @@ conversation_history = []
 def get_gemini_response(new_message):
     global conversation_history
     conversation_history.append("User: " + new_message)
-    prompt = "\n".join(conversation_history) + "\nAssistant:"
+    
+    # Determine current language based on the conversation context
+    is_bengali = False
+    for msg in conversation_history[-5:]:
+        if "বাংলা" in msg or "bn" in msg or "bn-BD" in msg:
+            is_bengali = True
+            break
+    
+    language = 'bn' if is_bengali else 'en'
+    
+    # Create a system instruction to stay on topic
+    if language == 'bn':
+        system_instruction = (
+            "আপনি একটি কৃষি সহায়তা বট যা শুধুমাত্র আম চাষ এবং গাছের রোগ সম্পর্কে প্রশ্নের উত্তর দিতে পারেন। "
+            "যদি প্রশ্নটি আম চাষ বা গাছের রোগের সাথে সম্পর্কিত না হয়, তাহলে অবশ্যই উত্তর দিন: "
+            "'দুঃখিত, আমি শুধুমাত্র আম চাষ এবং গাছের রোগ সম্পর্কে প্রশ্নের উত্তর দিতে পারি। অনুগ্রহ করে আম চাষ বা গাছের রোগ সম্পর্কে জিজ্ঞাসা করুন।' "
+            "কোনও ব্যতিক্রম নেই - যদি প্রশ্নটি আম চাষ বা গাছের রোগের সাথে সম্পর্কিত না হয়, তাহলে আপনি অন্য কোন উত্তর দেবেন না।"
+        )
+    else:
+        system_instruction = (
+            "You are an agricultural assistance bot that can only answer questions related to mango farming and plant diseases. "
+            "If the question is not related to mango farming or plant diseases, you must respond with exactly: "
+            "'I'm sorry, I can only answer questions related to mango farming and plant diseases. Please ask something related to mango farming or plant diseases.' "
+            "No exceptions - if the query is not about mango farming or plant diseases, you will not provide any other answer."
+        )
+    
+    # Create the full prompt with the system instruction
+    prompt = system_instruction + "\n\n" + "\n".join(conversation_history) + "\nAssistant:"
+    
+    # Generate response
     response = generate_gemini_response(prompt)
     conversation_history.append("Assistant: " + response)
     return response
@@ -136,9 +165,9 @@ def main():
     continue_conversation = True
     while continue_conversation:
         if language == 'bn':
-            question_prompt = "আপনার কি আরও কোন প্রশ্ন আছে? যদি থাকে তাহলে জিজ্ঞাসা করুন, অথবা বের হতে 'না' বলুন।"
+            question_prompt = "আপনার কি আরও কোন প্রশ্ন আছে? যদি থাকে তাহলে জিজ্ঞাসা করুন, অথবা বের হতে 'গুড বাই, ট্রিপালস' বলুন।"
         else:
-            question_prompt = "Do you have any more questions? If yes, please ask, or say 'no' to exit."
+            question_prompt = "Do you have any more questions? If yes, please ask, or say 'goodbye, treepulse' to exit."
         print(question_prompt)
         speak(question_prompt, lang=language)
         
@@ -147,12 +176,12 @@ def main():
             if user_response is not None:
                 break
             if language == 'bn':
-                speak("আপনার কোন প্রশ্ন থাকলে জিজ্ঞাসা করুন অথবা বেরিয়ে যেতে না বলুন।", lang=language)
+                speak("আপনার কোন প্রশ্ন থাকলে জিজ্ঞাসা করুন অথবা বেরিয়ে যেতে 'গুড বাই, ট্রিপালস' বলুন।", lang=language)
             else:
-                speak("Ask if you have any questions or say no to exit.", lang=language)
+                speak("Ask if you have any questions or say 'goodbye, treepulse' to exit.", lang=language)
         
         lower_resp = user_response.lower()
-        if 'no' in lower_resp or 'না' in lower_resp:
+        if 'goodbye, treepulse' in lower_resp or 'গুড বাই, ট্রিপালস' in lower_resp:
             continue_conversation = False
             if language == 'bn':
                 farewell = "ধন্যবাদ। আবার দেখা হবে।"
